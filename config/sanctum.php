@@ -47,8 +47,7 @@ return [
     |
     */
 
-    'expiration' => null,
-
+'expiration' => 1440, // Token expires in 24 hours
     /*
     |--------------------------------------------------------------------------
     | Token Prefix

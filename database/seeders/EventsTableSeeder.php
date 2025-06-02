@@ -27,7 +27,7 @@ class EventsTableSeeder extends Seeder
                 'type' => 'party',
                 'location' => 'Downtown Club, New York',
                 'organizer_id' => 3,
-                'image' => 'http://127.0.0.1:8000/storage/images/birthday_party.jpg', // example image path
+                'image' => 'http://127.0.0.1:8000/storage/images/birthday_party.jpg', 
                 'available_spots'=> 100, 
                 'created_at' => now(),
                 'updated_at' => now(),

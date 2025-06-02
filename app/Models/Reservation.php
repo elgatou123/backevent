@@ -18,7 +18,7 @@ class Reservation extends Model
 
     public function utilisateur()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Utilisateur::class);
     }
 
     public function event()

@@ -10,50 +10,87 @@ use Illuminate\Support\Facades\Auth;
 
 class ReservationController extends Controller
 {
-    public function index() {
+    /**
+     * Display a listing of all reservations with related user and event.
+     */
+    public function index()
+    {
         return Reservation::with('utilisateur', 'event')->get();
     }
 
-    public function store(Request $request) {
-    $user = Auth::user(); // Correction: utiliser user() au lieu de utilisateur()
-    
-    $validated = $request->validate([
-        'event_id' => 'required|exists:events,id',
-        'preferred_date' => 'required|date',
-        'preferred_time' => 'required',
-        'special_note' => 'nullable|string'
-    ]);
+    /**
+     * Store a new reservation for the authenticated user.
+     */
+    public function store(Request $request)
+    {
+        $user = Auth::user();
 
-    $reservation = Reservation::create([
-        'user_id' => $user->id,
-        'event_id' => $validated['event_id'],
-        'preferred_date' => $validated['preferred_date'],
-        'preferred_time' => $validated['preferred_time'],
-        'special_note' => $validated['special_note'] ?? null
-    ]);
+        $validated = $request->validate([
+            'event_id' => 'required|exists:events,id',
+            'preferred_date' => 'required|date',
+            'preferred_time' => 'required',
+            'special_note' => 'nullable|string',
+        ]);
 
-    // Création de l'invitation
-    $invite = Invite::create([
-        'reservation_id' => $reservation->id,
-        'token' => Str::uuid(),
-    ]);
+        $reservation = Reservation::create([
+            'user_id' => $user->id,
+            'event_id' => $validated['event_id'],
+            'preferred_date' => $validated['preferred_date'],
+            'preferred_time' => $validated['preferred_time'],
+            'special_note' => $validated['special_note'] ?? null,
+        ]);
 
-    return response()->json([
-        'reservation' => $reservation->load('utilisateur', 'event'),
-        'invite_link' => url('/invite/' . $invite->token),
-    ], 201);
-}
+        // Create an invite linked to the reservation
+        $invite = Invite::create([
+            'reservation_id' => $reservation->id,
+            'token' => Str::uuid(),
+        ]);
 
-public function myReservations() {
-    $user = Auth::user(); // Correction: utiliser user() au lieu de utilisateur()
+        return response()->json([
+            'reservation' => $reservation->load('utilisateur', 'event'),
+            'invite_link' => url('/invite/' . $invite->token),
+        ], 201);
+    }
+
+    /**
+     * Get reservations for the currently authenticated user.
+     */
+public function myReservations()
+{
+    $user = Auth::user();
+
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthenticated. Please log in.'
+        ], 401);
+    }
+
     return Reservation::with('event', 'invite')
         ->where('user_id', $user->id)
         ->get();
 }
 
-public function getEventReservations($eventId) {
+
+    /**
+     * Get reservations for a specific user by user ID.
+     * Optional: Useful for admins or for user profile views.
+     */
+    public function userReservations($utilisateurId)
+    {
+        return Reservation::with('event', 'invite')
+            ->where('user_id', $utilisateurId)
+            ->get();
+    }
+
+    /**
+     * Get reservations for a specific event.
+     */
+    public function getEventReservations($eventId)
+    {
         return Reservation::with(['utilisateur', 'invite'])
             ->where('event_id', $eventId)
             ->get();
     }
+    
 }
