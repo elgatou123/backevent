@@ -6,6 +6,7 @@ use App\Models\Reservation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\Invite;
+use Illuminate\Support\Facades\Auth;
 
 class ReservationController extends Controller
 {
@@ -14,27 +15,43 @@ class ReservationController extends Controller
     }
 
     public function store(Request $request) {
-        $reservation = Reservation::create($request->all());
+    $user = Auth::user(); // Correction: utiliser user() au lieu de utilisateur()
+    
+    $validated = $request->validate([
+        'event_id' => 'required|exists:events,id',
+        'preferred_date' => 'required|date',
+        'preferred_time' => 'required',
+        'special_note' => 'nullable|string'
+    ]);
 
-        // Create Invite
-        $invite = Invite::create([
-            'reservation_id' => $reservation->id,
-            'token' => Str::uuid(),
-        ]);
+    $reservation = Reservation::create([
+        'user_id' => $user->id,
+        'event_id' => $validated['event_id'],
+        'preferred_date' => $validated['preferred_date'],
+        'preferred_time' => $validated['preferred_time'],
+        'special_note' => $validated['special_note'] ?? null
+    ]);
 
-        return [
-            'reservation' => $reservation,
-            'invite_link' => url('/invite/' . $invite->token),
-        ];
-    }
+    // Création de l'invitation
+    $invite = Invite::create([
+        'reservation_id' => $reservation->id,
+        'token' => Str::uuid(),
+    ]);
 
-    public function myReservations($userId) {
-        return Reservation::with('event', 'invite')
-            ->where('user_id', $userId)
-            ->get();
-    }
+    return response()->json([
+        'reservation' => $reservation->load('utilisateur', 'event'),
+        'invite_link' => url('/invite/' . $invite->token),
+    ], 201);
+}
 
-    public function getEventReservations($eventId) {
+public function myReservations() {
+    $user = Auth::user(); // Correction: utiliser user() au lieu de utilisateur()
+    return Reservation::with('event', 'invite')
+        ->where('user_id', $user->id)
+        ->get();
+}
+
+public function getEventReservations($eventId) {
         return Reservation::with(['utilisateur', 'invite'])
             ->where('event_id', $eventId)
             ->get();

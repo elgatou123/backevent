@@ -53,14 +53,43 @@ public function store(Request $request)
         return Event::with(['services', 'organizer'])->findOrFail($id);
     }
 
-    public function update(Request $request, $id) {
-        $event = Event::findOrFail($id);
-        $event->update($request->all());
-        if ($request->has('services')) {
-            $event->services()->sync($request->services);
+    public function update(Request $request, $id)
+{
+    $event = Event::findOrFail($id);
+    
+    $validated = $request->validate([
+        'title' => 'required|string|max:255',
+        'description' => 'required|string|min:10',
+        'type' => 'required|in:wedding,birthday,party,conference,meeting,funeral,other',
+        'location' => 'required|string|min:3',
+        'services' => 'sometimes|array',
+        'services.*' => 'exists:services,id',
+        'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        'available_spots' => 'required|integer|min:1',
+    ]);
+
+    // Handle image upload
+    if ($request->hasFile('image')) {
+        // Delete old image if exists
+        if ($event->image) {
+            Storage::delete(str_replace('storage', 'public', $event->image));
         }
-        return $event->load('services');
+        
+        $path = $request->file('image')->store('public/images');
+        $validated['image'] = str_replace('public', 'storage', $path);
     }
+
+    $event->update($validated);
+
+    if ($request->has('services')) {
+        $event->services()->sync($validated['services']);
+    }
+
+    return response()->json([
+        'message' => 'Event updated successfully',
+        'event' => $event->load('services')
+    ]);
+}
 
     public function destroy($id) {
         return Event::destroy($id);

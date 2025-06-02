@@ -6,24 +6,19 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('reservations', function (Blueprint $table) {
-                $table->id();
-                $table->dateTime('date_time');
-                $table->foreignId('utilisateurs_id')->constrained('utilisateurs')->onDelete('cascade');
-                $table->foreignId('event_id')->constrained('events')->onDelete('cascade');
-                $table->timestamps();
-
+            $table->id();
+            $table->date('preferred_date');
+            $table->time('preferred_time');
+            $table->text('special_note')->nullable();
+            $table->foreignId('user_id')->constrained('utilisateurs')->onDelete('cascade');
+            $table->foreignId('event_id')->constrained('events')->onDelete('cascade');
+            $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('reservations');
