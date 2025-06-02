@@ -17,4 +17,14 @@ class InviteController extends Controller
 
         return response()->json(['message' => 'Status updated.']);
     }
+    public function getUserInvitations($email)
+{
+    $invitations = Invite::with(['reservation.event'])
+        ->whereHas('reservation', function($query) use ($email) {
+            $query->where('guest_email', $email);
+        })
+        ->get();
+
+    return response()->json($invitations);
+}
 }

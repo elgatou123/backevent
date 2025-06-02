@@ -58,17 +58,17 @@ class ReservationController extends Controller
 public function myReservations()
 {
     $user = Auth::user();
-
-    if (!$user) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Unauthenticated. Please log in.'
-        ], 401);
-    }
-
-    return Reservation::with('event', 'invite')
+    return Reservation::with(['event', 'invite'])
         ->where('user_id', $user->id)
+        ->orderBy('created_at', 'desc')
         ->get();
+}
+
+
+public function show($id)
+{
+    return Reservation::with(['utilisateur', 'event', 'invite', 'guests'])
+        ->findOrFail($id);
 }
 
 
